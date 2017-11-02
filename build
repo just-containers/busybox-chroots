@@ -1,0 +1,250 @@
+#!/usr/bin/env bash
+set -e
+
+TARGET=$1
+
+if [[ -z "${TARGET}" ]] ; then
+    echo "Usage: $0 target"
+    exit 1
+fi
+
+BUSYBOX_VER=1.27.2
+LIBTOOL_VER=2.4.6
+GCC_VER=7.2.0
+MUSL_VER=1.1.18
+BINUTILS_VER=2.28.1
+LINUX_VER=4.4.10
+GMP_VER=6.1.2
+MPFR_VER=3.1.5
+MPC_VER=1.0.3
+ISL_VER=0.18
+MAKE_VER=4.2.1
+
+DISTDIR=$(pwd)/dist
+DOWNLOADDIR=$(pwd)/downloads
+BUILDDIR=$(pwd)/builds
+TOOLDIR=$(pwd)/tools
+CHROOTDIR=$(pwd)/chroots
+LOGDIR=$(pwd)/logs
+
+mkdir -p $DISTDIR
+mkdir -p $DOWNLOADDIR
+mkdir -p $BUILDDIR
+mkdir -p $TOOLDIR
+mkdir -p $CHROOTDIR
+mkdir -p $LOGDIR
+
+declare -A linux_arches
+linux_arches[x86_64-linux-musl]=x86_64
+linux_arches[i486-linux-musl]=x86
+linux_arches[arm-linux-musleabihf]=arm
+linux_arches[arm-linux-musleabi]=arm
+linux_arches[aarch64-linux-musl]=arm64
+
+declare -A short_arches
+short_arches[x86_64-linux-musl]=amd64
+short_arches[i486-linux-musl]=x86
+short_arches[arm-linux-musleabihf]=armhf
+short_arches[arm-linux-musleabi]=arm
+short_arches[aarch64-linux-musl]=aarch64
+
+declare -A gcc_args
+gcc_args[x86_64-linux-musl]=""
+gcc_args[i486-linux-musl]=""
+gcc_args[arm-linux-musleabihf]=" --with-float=hard"
+gcc_args[arm-linux-musleabi]=""
+gcc_args[aarch64-linux-musl]=""
+
+mkdir -p $TOOLDIR/${TARGET}
+
+mkdir -p $CHROOTDIR/${TARGET}
+mkdir -p $CHROOTDIR/${TARGET}/usr/bin
+mkdir -p $CHROOTDIR/${TARGET}/bin
+mkdir -p $CHROOTDIR/${TARGET}/usr/sbin
+mkdir -p $CHROOTDIR/${TARGET}/sbin
+mkdir -p $CHROOTDIR/${TARGET}/dev
+mkdir -p $CHROOTDIR/${TARGET}/proc
+mkdir -p $CHROOTDIR/${TARGET}/sys
+mkdir -p $CHROOTDIR/${TARGET}/src
+
+
+if [[ ! -f "$DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.gz" ]] ; then
+    curl -R -L -o "$DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.gz" \
+      "https://github.com/jprjr/musl-cross-make-static/releases/download/3/gcc-${GCC_VER}-${TARGET}.tar.gz"
+fi
+
+tar xf $DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.gz -C $TOOLDIR/${TARGET}
+
+echo "Building kernel headers"
+
+mkdir -p $BUILDDIR/${TARGET}
+tar xf $DOWNLOADDIR/linux-${LINUX_VER}.tar.xz -C $BUILDDIR/${TARGET}
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+make -C $BUILDDIR/${TARGET}/linux-${LINUX_VER} ARCH=${linux_arches[${TARGET}]} CC=${TARGET}-gcc INSTALL_HDR_PATH=${CHROOTDIR}/${TARGET}/usr headers_install \
+>$LOGDIR/kernel.txt 2>&1
+
+cd $BUILDDIR
+rm -rf $BUILDDIR/${TARGET}/linux-${LINUX_VER}
+
+tar xf $DOWNLOADDIR/busybox-${BUSYBOX_VER}.tar.bz2 -C $BUILDDIR/${TARGET}
+
+echo "Building busybox"
+
+CFLAGS="-g0 -Os" \
+CXXFLAGS="-g0 -Os" \
+LDFLAGS="-s" \
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
+  -j$(nproc) \
+  CROSS_COMPILE=${TARGET}- \
+  defconfig \
+>$LOGDIR/busybox.txt 2>&1
+
+CFLAGS="-g0 -Os" \
+CXXFLAGS="-g0 -Os" \
+LDFLAGS="-s" \
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
+  -j$(nproc) \
+  CONFIG_PREFIX=$CHROOTDIR/${TARGET} \
+  CROSS_COMPILE=${TARGET}- \
+>$LOGDIR/busybox.txt 2>&1
+
+CFLAGS="-g0 -Os" \
+CXXFLAGS="-g0 -Os" \
+LDFLAGS="-s" \
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
+  CROSS_COMPILE=${TARGET}- \
+  CONFIG_PREFIX=$CHROOTDIR/${TARGET} install \
+>$LOGDIR/busybox.txt 2>&1
+
+cd $BUILDDIR
+rm -rf $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER}
+
+tar xf $DOWNLOADDIR/musl-${MUSL_VER}.tar.gz -C $BUILDDIR/${TARGET}
+cd $BUILDDIR/${TARGET}/musl-${MUSL_VER}
+
+echo "Building musl"
+
+CFLAGS="-g0 -Os" \
+CXXFLAGS="-g0 -Os" \
+LDFLAGS="-s" \
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+CROSS_COMPILE=${TARGET}- ./configure --prefix=/usr
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) \
+>$LOGDIR/musl.txt 2>&1
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install \
+>$LOGDIR/musl.txt 2>&1
+
+cd $BUILDDIR
+rm -rf $BUILDDIR/${TARGET}/musl-${MUSL_VER}
+
+tar xf $DOWNLOADDIR/binutils-${BINUTILS_VER}.tar.xz -C $BUILDDIR/${TARGET}
+cd $BUILDDIR/${TARGET}/binutils-${BINUTILS_VER}
+
+echo "Building binutils"
+
+rm -rf build
+mkdir build
+cd build
+
+CFLAGS="-g0 -Os" \
+CXXFLAGS="-g0 -Os" \
+LDFLAGS="-s" \
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+../configure \
+  --prefix=/usr \
+  --build="$(gcc -dumpmachine)" \
+  --target="$TARGET" \
+  --host="$TARGET" \
+  --disable-nls
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) \
+>$LOGDIR/binutils.txt 2>&1
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install \
+>$LOGDIR/binutils.txt 2>&1
+
+cd $BUILDDIR
+rm -rf $BUILDDIR/${TARGET}/binutils-${BINUTILS_VER}
+
+tar xf $DOWNLOADDIR/make-${MAKE_VER}.tar.bz2 -C $BUILDDIR/${TARGET}
+cd $BUILDDIR/${TARGET}/make-${MAKE_VER}
+
+echo "Building make"
+
+CFLAGS="-g0 -Os" \
+CXXFLAGS="-g0 -Os" \
+LDFLAGS="-s" \
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+./configure \
+  --prefix=/usr \
+  --build="$(gcc -dumpmachine)" \
+  --host="$TARGET" \
+  --disable-nls \
+  --without-guile \
+  --without-dmalloc
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) \
+>$LOGDIR/make.txt 2>&1
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install \
+>$LOGDIR/make.txt 2>&1
+
+cd $BUILDDIR
+rm -rf $BUILDDIR/${TARGET}/make-${MAKE_VER}
+
+tar xf $DOWNLOADDIR/gcc-${GCC_VER}.tar.xz -C $BUILDDIR/${TARGET}
+cd $BUILDDIR/${TARGET}/gcc-${GCC_VER}
+tar xf $DOWNLOADDIR/gmp-${GMP_VER}.tar.xz
+tar xf $DOWNLOADDIR/mpfr-${MPFR_VER}.tar.xz
+tar xf $DOWNLOADDIR/mpc-${MPC_VER}.tar.gz
+tar xf $DOWNLOADDIR/isl-${ISL_VER}.tar.xz
+
+rm -rf gmp mpfr mpc isl
+mv gmp-${GMP_VER} gmp
+mv mpfr-${MPFR_VER} mpfr
+mv mpc-${MPC_VER} mpc
+mv isl-${ISL_VER} isl
+cp mpfr/config.sub gmp/config.sub
+
+rm -rf build-gcc
+mkdir build-gcc
+cd build-gcc
+
+echo "Building gcc"
+
+CFLAGS="-g0 -Os" \
+CXXFLAGS="-g0 -Os" \
+LDFLAGS="-s" \
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+../configure \
+  --prefix=/usr \
+  ${gcc_args[$TARGET]} \
+  --build="$(gcc -dumpmachine)" \
+  --target="$TARGET" \
+  --host="$TARGET" \
+  --enable-languages=c,c++ \
+  --disable-libquadmath \
+  --disable-decimal-float \
+  --disable-nls \
+  --disable-werror \
+  --disable-multilib \
+  --disable-libmudflap \
+  --disable-libsanitizer \
+  --disable-gnu-indirect-function \
+  --disable-libmpx \
+  --enable-deterministic-archives \
+  --enable-libstdcxx-time
+
+LOG=$LOGDIR/host-gcc.txt $DOWNLOADDIR/travis_wait_log 1 \
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc)
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install \
+>$LOGDIR/gcc.txt 2>&1
+
+cd $BUILDDIR
+rm -rf $BUILDDIR/${TARGET}/make-${MAKE_VER}
+rm -rf $TOOLDIR/${TARGET}
+
+tar -czf $DISTDIR/chroot-${short_arches[${TARGET}]}.tar.gz \
+  --owner 0 \
+  --group 0 \
+  -C $CHROOTDIR/${TARGET} .
+
