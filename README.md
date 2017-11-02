@@ -3,6 +3,8 @@
 This script builds a small busybox-based chroot, useful
 for compiling software that has a hard time with cross-compilation.
 
+See the releases tab for downloadable tarballs.
+
 ## Usage
 
 ```bash
