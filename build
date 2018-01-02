@@ -8,7 +8,7 @@ if [[ -z "${TARGET}" ]] ; then
     exit 1
 fi
 
-BUSYBOX_VER=1.27.2
+BUSYBOX_VER=1.28.0
 LIBTOOL_VER=2.4.6
 GCC_VER=7.2.0
 MUSL_VER=1.1.18
