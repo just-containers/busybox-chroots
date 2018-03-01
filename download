@@ -84,7 +84,7 @@ if [[ ! -f "$DOWNLOADDIR/qemu-2.9.0-aarch64.tar.gz" ]] ; then
 fi
 
 if [[ ! -f "$DOWNLOADDIR/qemu-2.9.0-arm.tar.gz" ]] ; then
-    printf "Downloading qemu-static (aarch64)\n"
+    printf "Downloading qemu-static (arm)\n"
     curl -s -R -L -o "$DOWNLOADDIR/qemu-2.9.0-arm.tar.gz" \
       "https://github.com/resin-io/qemu/releases/download/v2.9.0%2Bresin1/qemu-2.9.0.resin1-arm.tar.gz"
 fi
