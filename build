@@ -127,7 +127,7 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-CROSS_COMPILE=${TARGET}-
+CROSS_COMPILE=${TARGET}- \
 $DOWNLOADDIR/bin/runlog -l $LOGDIR/musl-${TARGET}-configure.txt -- \
 ./configure --prefix=/usr >/dev/null
 
