@@ -4,65 +4,87 @@ set -e
 source versions
 
 DOWNLOADDIR=$(pwd)/downloads
-mkdir -p $DOWNLOADDIR
+mkdir -p $DOWNLOADDIR/bin
 
 if [[ ! -f "$DOWNLOADDIR/linux-${LINUX_VER}.tar.xz" ]] ; then
-    curl -R -L -o $DOWNLOADDIR/linux-${LINUX_VER}.tar.xz "https://www.kernel.org/pub/linux/kernel/v4.x/linux-${LINUX_VER}.tar.xz"
+    printf "Downloading kernel source\n"
+    curl -s -R -L -o $DOWNLOADDIR/linux-${LINUX_VER}.tar.xz "https://www.kernel.org/pub/linux/kernel/v4.x/linux-${LINUX_VER}.tar.xz"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/busybox-${BUSYBOX_VER}.tar.bz2" ]] ; then
-    curl -R -L -o $DOWNLOADDIR/busybox-$BUSYBOX_VER.tar.bz2 "https://busybox.net/downloads/busybox-$BUSYBOX_VER.tar.bz2"
+    printf "Downloading busybox source\n"
+    curl -s -R -L -o $DOWNLOADDIR/busybox-$BUSYBOX_VER.tar.bz2 "https://busybox.net/downloads/busybox-$BUSYBOX_VER.tar.bz2"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/musl-${MUSL_VER}.tar.gz" ]] ; then
-    curl -R -L -o $DOWNLOADDIR/musl-${MUSL_VER}.tar.gz "https://www.musl-libc.org/releases/musl-${MUSL_VER}.tar.gz"
+    printf "Downloading musl source\n"
+    curl -s -R -L -o $DOWNLOADDIR/musl-${MUSL_VER}.tar.gz "https://www.musl-libc.org/releases/musl-${MUSL_VER}.tar.gz"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/make-${MAKE_VER}.tar.bz2" ]] ; then
-    curl -R -L -o $DOWNLOADDIR/make-${MAKE_VER}.tar.bz2 "https://ftp.gnu.org/gnu/make/make-${MAKE_VER}.tar.bz2"
+    printf "Downloading make source\n"
+    curl -s -R -L -o $DOWNLOADDIR/make-${MAKE_VER}.tar.bz2 "https://ftp.gnu.org/gnu/make/make-${MAKE_VER}.tar.bz2"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/binutils-${BINUTILS_VER}.tar.xz" ]] ; then
-    curl -R -L -o $DOWNLOADDIR/binutils-${BINUTILS_VER}.tar.xz "https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.xz"
+    printf "Downloading binutils source\n"
+    curl -s -R -L -o $DOWNLOADDIR/binutils-${BINUTILS_VER}.tar.xz "https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.xz"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/gcc-${GCC_VER}.tar.xz" ]] ; then
-    curl -R -L -o $DOWNLOADDIR/gcc-${GCC_VER}.tar.xz "https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
+    printf "Downloading gcc source\n"
+    curl -s -R -L -o $DOWNLOADDIR/gcc-${GCC_VER}.tar.xz "https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/gmp-${GMP_VER}.tar.xz" ]] ; then
-    curl -R -L -o $DOWNLOADDIR/gmp-${GMP_VER}.tar.xz "https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VER}.tar.xz"
+    printf "Downloading gmp source\n"
+    curl -s -R -L -o $DOWNLOADDIR/gmp-${GMP_VER}.tar.xz "https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VER}.tar.xz"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/mpfr-${MPFR_VER}.tar.xz" ]] ; then
-    curl -R -L -o $DOWNLOADDIR/mpfr-${MPFR_VER}.tar.xz "https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VER}.tar.xz"
+    printf "Downloading mpfr source\n"
+    curl -s -R -L -o $DOWNLOADDIR/mpfr-${MPFR_VER}.tar.xz "https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VER}.tar.xz"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/mpc-${MPC_VER}.tar.gz" ]] ; then
-    curl -R -L -o $DOWNLOADDIR/mpc-${MPC_VER}.tar.gz "https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VER}.tar.gz"
+    printf "Downloading mpc source\n"
+    curl -s -R -L -o $DOWNLOADDIR/mpc-${MPC_VER}.tar.gz "https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VER}.tar.gz"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/isl-${ISL_VER}.tar.xz" ]] ; then
-    curl -R -L -o $DOWNLOADDIR/isl-${ISL_VER}.tar.xz "http://isl.gforge.inria.fr/isl-${ISL_VER}.tar.xz"
+    printf "Downloading isl source\n"
+    curl -s -R -L -o $DOWNLOADDIR/isl-${ISL_VER}.tar.xz "http://isl.gforge.inria.fr/isl-${ISL_VER}.tar.xz"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/libtool-${LIBTOOL_VER}.tar.xz" ]] ; then
-    curl -R -L -o "$DOWNLOADDIR/libtool-${LIBTOOL_VER}.tar.xz" \
+    printf "Downloading libtool source\n"
+    curl -s -R -L -o "$DOWNLOADDIR/libtool-${LIBTOOL_VER}.tar.xz" \
       "https://ftp.gnu.org/gnu/libtool/libtool-${LIBTOOL_VER}.tar.xz"
 fi
 
+if [[ ! -f "$DOWNLOADDIR/bin/github-release" ]] ; then
+    printf "Downloading github-release\n"
+    curl -s -R -L -o "$DOWNLOADDIR/github-release.tar.bz2" \
+      "https://github.com/aktau/github-release/releases/download/v${GITHUB_RELEASE_VER}/linux-amd64-github-release.tar.bz2"
+    tar xf "$DOWNLOADDIR/github-release.tar.bz2" -C $DOWNLOADDIR/bin --strip-components=3
+fi
+
+
 if [[ ! -f "$DOWNLOADDIR/bin/runlog" ]] ; then
-    curl -R -L -o "$DOWNLOADDIR/travis-tools-linux.tar.xz" \
+    printf "Downloading runlog tool\n"
+    curl -s -R -L -o "$DOWNLOADDIR/travis-tools-linux.tar.xz" \
       "https://github.com/jprjr/travis-tools/releases/download/1.0.0/travis-tools-linux.tar.xz"
     tar xf "$DOWNLOADDIR/travis-tools-linux.tar.xz" -C "$DOWNLOADDIR"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/qemu-2.9.0-aarch64.tar.gz" ]] ; then
-    curl -R -L -o "$DOWNLOADDIR/qemu-2.9.0-aarch64.tar.gz" \
+    printf "Downloading qemu-static (aarch64)\n"
+    curl -s -R -L -o "$DOWNLOADDIR/qemu-2.9.0-aarch64.tar.gz" \
       "https://github.com/resin-io/qemu/releases/download/v2.9.0%2Bresin1/qemu-2.9.0.resin1-aarch64.tar.gz"
 fi
 
 if [[ ! -f "$DOWNLOADDIR/qemu-2.9.0-arm.tar.gz" ]] ; then
-    curl -R -L -o "$DOWNLOADDIR/qemu-2.9.0-arm.tar.gz" \
+    printf "Downloading qemu-static (aarch64)\n"
+    curl -s -R -L -o "$DOWNLOADDIR/qemu-2.9.0-arm.tar.gz" \
       "https://github.com/resin-io/qemu/releases/download/v2.9.0%2Bresin1/qemu-2.9.0.resin1-arm.tar.gz"
 fi
