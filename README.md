@@ -3,18 +3,28 @@
 This script builds a small busybox-based chroot, useful
 for compiling software that has a hard time with cross-compilation.
 
+The arm/aarch64 chroots have `/bin/sh` replaced with a static program
+to load and run qemu (included in the chroot). This way you can just run
+something like:
+
+```
+chroot /path/to/chroot /bin/sh
+```
+
+And everything should just work. No special kernel requirements needed!
+
 See the releases tab for downloadable tarballs.
 
 ## Usage
 
 ```bash
-docker build -t chroots .
-docker create --name tmp chroots
-docker cp tmp:/tmp/dist/chroot-x86_64.tar.gz ./
-docker cp tmp:/tmp/dist/chroot-x86.tar.gz ./
-docker cp tmp:/tmp/dist/chroot-arm.tar.gz ./
-docker cp tmp:/tmp/dist/chroot-armhf.tar.gz ./
-docker cp tmp:/tmp/dist/chroot-aarch64.tar.gz ./
-docker rm tmp
-docker rmi chroots
+./download
+./build arm-linux-musleabihf
+./build arm-linux-musleabi
+./build aarch64-linux-musl
+./build x86_64-linux-musl
+./build i486-linux-musl
 ```
+
+Tarballs will be in the `dist` directory.
+

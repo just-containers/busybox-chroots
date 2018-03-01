@@ -8,17 +8,7 @@ if [[ -z "${TARGET}" ]] ; then
     exit 1
 fi
 
-BUSYBOX_VER=1.27.2
-LIBTOOL_VER=2.4.6
-GCC_VER=7.2.0
-MUSL_VER=1.1.18
-BINUTILS_VER=2.28.1
-LINUX_VER=4.4.10
-GMP_VER=6.1.2
-MPFR_VER=3.1.5
-MPC_VER=1.0.3
-ISL_VER=0.18
-MAKE_VER=4.2.1
+source versions
 
 DISTDIR=$(pwd)/dist
 DOWNLOADDIR=$(pwd)/downloads
@@ -33,6 +23,7 @@ mkdir -p $BUILDDIR
 mkdir -p $TOOLDIR
 mkdir -p $CHROOTDIR
 mkdir -p $LOGDIR
+rm -f $LOGDIR/*.txt
 
 declare -A linux_arches
 linux_arches[x86_64-linux-musl]=x86_64
@@ -69,8 +60,9 @@ mkdir -p $CHROOTDIR/${TARGET}/src
 
 
 if [[ ! -f "$DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.gz" ]] ; then
-    curl -R -L -o "$DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.gz" \
-      "https://github.com/jprjr/musl-cross-make-static/releases/download/3/gcc-${GCC_VER}-${TARGET}.tar.gz"
+    printf 'Downloading cross-compiler\n'
+    curl -s -R -L -o "$DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.gz" \
+      "https://github.com/just-containers/musl-cross-make/releases/download/v8/gcc-${GCC_VER}-${TARGET}.tar.xz"
 fi
 
 tar xf $DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.gz -C $TOOLDIR/${TARGET}
@@ -80,8 +72,8 @@ echo "Building kernel headers"
 mkdir -p $BUILDDIR/${TARGET}
 tar xf $DOWNLOADDIR/linux-${LINUX_VER}.tar.xz -C $BUILDDIR/${TARGET}
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-make -C $BUILDDIR/${TARGET}/linux-${LINUX_VER} ARCH=${linux_arches[${TARGET}]} CC=${TARGET}-gcc INSTALL_HDR_PATH=${CHROOTDIR}/${TARGET}/usr headers_install \
->$LOGDIR/kernel.txt 2>&1
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/kernel.txt -- \
+make -C $BUILDDIR/${TARGET}/linux-${LINUX_VER} ARCH=${linux_arches[${TARGET}]} CC=${TARGET}-gcc INSTALL_HDR_PATH=${CHROOTDIR}/${TARGET}/usr headers_install >/dev/null
 
 cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/linux-${LINUX_VER}
@@ -92,32 +84,35 @@ echo "Building busybox"
 
 CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
-LDFLAGS="-s" \
+LDFLAGS="-s -static" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-configure.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
   -j$(nproc) \
   CROSS_COMPILE=${TARGET}- \
   defconfig \
->$LOGDIR/busybox.txt 2>&1
+>/dev/null
 
 CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
-LDFLAGS="-s" \
+LDFLAGS="-s -static" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/busrbox-build.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
   -j$(nproc) \
   CONFIG_PREFIX=$CHROOTDIR/${TARGET} \
   CROSS_COMPILE=${TARGET}- \
->$LOGDIR/busybox.txt 2>&1
+>/dev/null
 
 CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
-LDFLAGS="-s" \
+LDFLAGS="-s -static" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-install.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
   CROSS_COMPILE=${TARGET}- \
   CONFIG_PREFIX=$CHROOTDIR/${TARGET} install \
->$LOGDIR/busybox.txt 2>&1
+>/dev/null
 
 cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER}
@@ -131,10 +126,18 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-CROSS_COMPILE=${TARGET}- ./configure --prefix=/usr
-PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) \
->$LOGDIR/musl.txt 2>&1
-PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install \
+CROSS_COMPILE=${TARGET}-
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/musl-configure.txt -- \
+./configure --prefix=/usr >/dev/null
+
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/musl-build.txt -- \
+make -j$(nproc) \
+>/dev/null
+
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/musl-install.txt -- \
+make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install \
 >$LOGDIR/musl.txt 2>&1
 
 cd $BUILDDIR
@@ -153,16 +156,21 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/binutils-configure.txt -- \
 ../configure \
   --prefix=/usr \
   --build="$(gcc -dumpmachine)" \
   --target="$TARGET" \
   --host="$TARGET" \
-  --disable-nls
-PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) \
->$LOGDIR/binutils.txt 2>&1
-PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install \
->$LOGDIR/binutils.txt 2>&1
+  --disable-nls > /dev/null
+
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/binutils-build.txt -- \
+make -j$(nproc) >/dev/null
+
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/binutils-install.txt -- \
+make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install >/dev/null
 
 cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/binutils-${BINUTILS_VER}
@@ -176,17 +184,22 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/make-configure.txt -- \
 ./configure \
   --prefix=/usr \
   --build="$(gcc -dumpmachine)" \
   --host="$TARGET" \
   --disable-nls \
   --without-guile \
-  --without-dmalloc
-PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) \
->$LOGDIR/make.txt 2>&1
-PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install \
->$LOGDIR/make.txt 2>&1
+  --without-dmalloc >/dev/null
+
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/make-build.txt -- \
+make -j$(nproc) >/dev/null
+
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/make-install.txt -- \
+make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install >/dev/null
 
 cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/make-${MAKE_VER}
@@ -215,6 +228,7 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/gcc-configure.txt -- \
 ../configure \
   --prefix=/usr \
   ${gcc_args[$TARGET]} \
@@ -232,16 +246,34 @@ PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
   --disable-gnu-indirect-function \
   --disable-libmpx \
   --enable-deterministic-archives \
-  --enable-libstdcxx-time
+  --enable-libstdcxx-time > /dev/null
 
-LOG=$LOGDIR/host-gcc.txt $DOWNLOADDIR/travis_wait_log 1 \
-PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc)
-PATH="$TOOLDIR/${TARGET}/bin:$PATH" make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install \
->$LOGDIR/gcc.txt 2>&1
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/gcc-build.txt -- \
+make -j$(nproc) > /dev/null
+
+PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/gcc-install.txt -- \
+make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install >/dev/null
 
 cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/make-${MAKE_VER}
 rm -rf $TOOLDIR/${TARGET}
+
+case "$TARGET" in
+  arm*)
+    tar xf $DOWNLOADDIR/qemu-2.9.0-arm.tar.gz -C $CHROOTDIR/${TARGET}/bin --strip-components=1
+    mv $CHROOTDIR/${TARGET}/bin/qemu-arm-static $CHROOTDIR/${TARGET}/bin/qemu-static
+    rm $CHROOTDIR/${TARGET}/bin/sh
+    gcc -Wall -Wextra -s -static -o $CHROOTDIR/${TARGET}/bin/sh fakesh.c
+    ;;
+  aarch64*)
+    tar xf $DOWNLOADDIR/qemu-2.9.0-aarch64.tar.gz -C $CHROOTDIR/${TARGET}/bin --strip-components=1
+    mv $CHROOTDIR/${TARGET}/bin/qemu-aarch64-static $CHROOTDIR/${TARGET}/bin/qemu-static
+    rm $CHROOTDIR/${TARGET}/bin/sh
+    gcc -Wall -Wextra -s -static -o $CHROOTDIR/${TARGET}/bin/sh fakesh.c
+    ;;
+esac
 
 tar -czf $DISTDIR/chroot-${short_arches[${TARGET}]}.tar.gz \
   --owner 0 \
