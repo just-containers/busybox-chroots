@@ -65,6 +65,15 @@ mkdir -p $CHROOTDIR/${TARGET}/tmp
 mkdir -p $CHROOTDIR/${TARGET}/var
 mkdir -p $CHROOTDIR/${TARGET}/etc
 
+case "$TARGET" in
+  arm*)
+    tar xf $DOWNLOADDIR/qemu-2.9.0-arm.tar.gz -C $CHROOTDIR/${TARGET}/bin --strip-components=1
+    ;;
+  aarch64*)
+    tar xf $DOWNLOADDIR/qemu-2.9.0-aarch64.tar.gz -C $CHROOTDIR/${TARGET}/bin --strip-components=1
+    ;;
+esac
+
 
 if [[ ! -f "$DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.xz" ]] ; then
     printf 'Downloading cross-compiler\n'
@@ -91,7 +100,7 @@ echo "Building busybox"
 
 CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
-LDFLAGS="-s -static" \
+LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
 $DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-${TARGET}-configure.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
@@ -102,18 +111,20 @@ make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
 
 CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
-LDFLAGS="-s -static" \
+LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
 $DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-${TARGET}-build.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
   -j$(nproc) \
   CONFIG_PREFIX=$CHROOTDIR/${TARGET} \
   CROSS_COMPILE=${TARGET}- \
+  VERBOSE=1 \
+  V=1 \
 >/dev/null
 
 CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
-LDFLAGS="-s -static" \
+LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
 $DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-${TARGET}-install.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
@@ -266,23 +277,6 @@ make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install >/dev/null
 cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/make-${MAKE_VER}
 rm -rf $TOOLDIR/${TARGET}
-
-case "$TARGET" in
-  arm*)
-    tar xf $DOWNLOADDIR/qemu-2.9.0-arm.tar.gz -C $CHROOTDIR/${TARGET}/bin --strip-components=1
-    mv $CHROOTDIR/${TARGET}/bin/qemu-arm-static $CHROOTDIR/${TARGET}/bin/qemu-static
-    gcc -Wall -Wextra -s -static -o $CHROOTDIR/${TARGET}/bin/sh.fake ${THISDIR}/fakesh.c
-    rm $CHROOTDIR/${TARGET}/bin/sh
-    ln -s sh.fake $CHROOTDIR/${TARGET}/bin/sh
-    ;;
-  aarch64*)
-    tar xf $DOWNLOADDIR/qemu-2.9.0-aarch64.tar.gz -C $CHROOTDIR/${TARGET}/bin --strip-components=1
-    mv $CHROOTDIR/${TARGET}/bin/qemu-aarch64-static $CHROOTDIR/${TARGET}/bin/qemu-static
-    gcc -Wall -Wextra -s -static -o $CHROOTDIR/${TARGET}/bin/sh.fake ${THISDIR}/fakesh.c
-    rm $CHROOTDIR/${TARGET}/bin/sh
-    ln -s sh.fake $CHROOTDIR/${TARGET}/bin/sh
-    ;;
-esac
 
 tar -czf $DISTDIR/chroot-${short_arches[${TARGET}]}.tar.gz \
   --owner 0 \

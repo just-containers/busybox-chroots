@@ -3,15 +3,15 @@
 This script builds a small busybox-based chroot, useful
 for compiling software that has a hard time with cross-compilation.
 
-The arm/aarch64 chroots have `/bin/sh` replaced with a static program
-to load and run qemu (included in the chroot). This way you can just run
-something like:
+The arm/aarch64 chroots have `qemu-[arm|aarch64]-static` installed
+under `/bin`, and these have been patched to allow intercepting execve calls
+(so you don't need to change your `binfmt_misc` entries).
+
+You should be able to run them with a command like:
 
 ```
-chroot /path/to/chroot /bin/sh
+chroot chroots/arm-linux-musleabihf /bin/qemu-arm-static -execve /bin/sh
 ```
-
-And everything should just work. No special kernel requirements needed!
 
 See the releases tab for downloadable tarballs.
 
