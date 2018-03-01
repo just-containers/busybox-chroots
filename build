@@ -8,6 +8,8 @@ if [[ -z "${TARGET}" ]] ; then
     exit 1
 fi
 
+unset CC CXX LINK AR NM READELF RANLIB
+
 source versions
 
 THISDIR=$(pwd)
