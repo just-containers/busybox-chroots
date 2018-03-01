@@ -1,0 +1,23 @@
+sudo: false
+dist: trusty
+
+language: c
+
+env:
+  - TARGET=x86_64-linux-musl
+  - TARGET=i486-linux-musl
+  - TARGET=arm-linux-musleabi
+  - TARGET=arm-linux-musleabihf
+  - TARGET=aarch64-linux-musl
+
+install:
+  - bash download
+
+script:
+  - bash build ${TARGET}
+
+after_failure:
+  - tail -n9999999 logs/*
+
+after_success:
+  - bash release ${TARGET}

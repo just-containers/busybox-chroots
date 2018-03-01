@@ -24,7 +24,7 @@ mkdir -p $BUILDDIR
 mkdir -p $TOOLDIR
 mkdir -p $CHROOTDIR
 mkdir -p $LOGDIR
-rm -f $LOGDIR/*.txt
+rm -f $LOGDIR/*${TARGET}*.txt
 
 declare -A linux_arches
 linux_arches[x86_64-linux-musl]=x86_64
@@ -73,7 +73,7 @@ echo "Building kernel headers"
 mkdir -p $BUILDDIR/${TARGET}
 tar xf $DOWNLOADDIR/linux-${LINUX_VER}.tar.xz -C $BUILDDIR/${TARGET}
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/kernel.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/kernel-${TARGET}.txt -- \
 make -C $BUILDDIR/${TARGET}/linux-${LINUX_VER} ARCH=${linux_arches[${TARGET}]} CC=${TARGET}-gcc INSTALL_HDR_PATH=${CHROOTDIR}/${TARGET}/usr headers_install >/dev/null
 
 cd $BUILDDIR
@@ -87,7 +87,7 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s -static" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-configure.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-${TARGET}-configure.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
   -j$(nproc) \
   CROSS_COMPILE=${TARGET}- \
@@ -98,7 +98,7 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s -static" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/busrbox-build.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-${TARGET}-build.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
   -j$(nproc) \
   CONFIG_PREFIX=$CHROOTDIR/${TARGET} \
@@ -109,7 +109,7 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s -static" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-install.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-${TARGET}-install.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
   CROSS_COMPILE=${TARGET}- \
   CONFIG_PREFIX=$CHROOTDIR/${TARGET} install \
@@ -128,16 +128,16 @@ CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
 CROSS_COMPILE=${TARGET}-
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/musl-configure.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/musl-${TARGET}-configure.txt -- \
 ./configure --prefix=/usr >/dev/null
 
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/musl-build.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/musl-${TARGET}-build.txt -- \
 make -j$(nproc) \
 >/dev/null
 
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/musl-install.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/musl-${TARGET}-install.txt -- \
 make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install \
 >$LOGDIR/musl.txt 2>&1
 
@@ -157,7 +157,7 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/binutils-configure.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/binutils-${TARGET}-configure.txt -- \
 ../configure \
   --prefix=/usr \
   --build="$(gcc -dumpmachine)" \
@@ -166,11 +166,11 @@ $DOWNLOADDIR/bin/runlog -l $LOGDIR/binutils-configure.txt -- \
   --disable-nls > /dev/null
 
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/binutils-build.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/binutils-${TARGET}-build.txt -- \
 make -j$(nproc) >/dev/null
 
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/binutils-install.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/binutils-${TARGET}-install.txt -- \
 make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install >/dev/null
 
 cd $BUILDDIR
@@ -185,7 +185,7 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/make-configure.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/make-${TARGET}-configure.txt -- \
 ./configure \
   --prefix=/usr \
   --build="$(gcc -dumpmachine)" \
@@ -195,11 +195,11 @@ $DOWNLOADDIR/bin/runlog -l $LOGDIR/make-configure.txt -- \
   --without-dmalloc >/dev/null
 
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/make-build.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/make-${TARGET}-build.txt -- \
 make -j$(nproc) >/dev/null
 
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/make-install.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/make-${TARGET}-install.txt -- \
 make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install >/dev/null
 
 cd $BUILDDIR
@@ -229,7 +229,7 @@ CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
 LDFLAGS="-s" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/gcc-configure.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/gcc-${TARGET}-configure.txt -- \
 ../configure \
   --prefix=/usr \
   ${gcc_args[$TARGET]} \
@@ -250,11 +250,11 @@ $DOWNLOADDIR/bin/runlog -l $LOGDIR/gcc-configure.txt -- \
   --enable-libstdcxx-time > /dev/null
 
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/gcc-build.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/gcc-${TARGET}-build.txt -- \
 make -j$(nproc) > /dev/null
 
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
-$DOWNLOADDIR/bin/runlog -l $LOGDIR/gcc-install.txt -- \
+$DOWNLOADDIR/bin/runlog -l $LOGDIR/gcc-${TARGET}-install.txt -- \
 make -j$(nproc) DESTDIR=$CHROOTDIR/${TARGET} install >/dev/null
 
 cd $BUILDDIR
@@ -265,14 +265,16 @@ case "$TARGET" in
   arm*)
     tar xf $DOWNLOADDIR/qemu-2.9.0-arm.tar.gz -C $CHROOTDIR/${TARGET}/bin --strip-components=1
     mv $CHROOTDIR/${TARGET}/bin/qemu-arm-static $CHROOTDIR/${TARGET}/bin/qemu-static
+    gcc -Wall -Wextra -s -static -o $CHROOTDIR/${TARGET}/bin/sh.fake ${THISDIR}/fakesh.c
     rm $CHROOTDIR/${TARGET}/bin/sh
-    gcc -Wall -Wextra -s -static -o $CHROOTDIR/${TARGET}/bin/sh ${THISDIR}/fakesh.c
+    ln -s sh.fake $CHROOTDIR/${TARGET}/bin/sh
     ;;
   aarch64*)
     tar xf $DOWNLOADDIR/qemu-2.9.0-aarch64.tar.gz -C $CHROOTDIR/${TARGET}/bin --strip-components=1
     mv $CHROOTDIR/${TARGET}/bin/qemu-aarch64-static $CHROOTDIR/${TARGET}/bin/qemu-static
+    gcc -Wall -Wextra -s -static -o $CHROOTDIR/${TARGET}/bin/sh.fake ${THISDIR}/fakesh.c
     rm $CHROOTDIR/${TARGET}/bin/sh
-    gcc -Wall -Wextra -s -static -o $CHROOTDIR/${TARGET}/bin/sh ${THISDIR}/fakesh.c
+    ln -s sh.fake $CHROOTDIR/${TARGET}/bin/sh
     ;;
 esac
 
