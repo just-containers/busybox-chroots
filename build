@@ -60,6 +60,10 @@ mkdir -p $CHROOTDIR/${TARGET}/dev
 mkdir -p $CHROOTDIR/${TARGET}/proc
 mkdir -p $CHROOTDIR/${TARGET}/sys
 mkdir -p $CHROOTDIR/${TARGET}/src
+mkdir -p $CHROOTDIR/${TARGET}/run
+mkdir -p $CHROOTDIR/${TARGET}/tmp
+mkdir -p $CHROOTDIR/${TARGET}/var
+mkdir -p $CHROOTDIR/${TARGET}/etc
 
 
 if [[ ! -f "$DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.xz" ]] ; then
