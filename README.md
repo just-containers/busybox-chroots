@@ -3,17 +3,50 @@
 This script builds a small busybox-based chroot, useful
 for compiling software that has a hard time with cross-compilation.
 
-The arm/aarch64 chroots have `qemu-[arm|aarch64]-static` installed
-under `/bin`, and these have been patched to allow intercepting execve calls
-(so you don't need to change your `binfmt_misc` entries).
-
-You should be able to run them with a command like:
-
-```
-chroot chroots/arm-linux-musleabihf /bin/qemu-arm-static -execve /bin/sh
-```
-
 See the releases tab for downloadable tarballs.
+
+Some tips for running these chroots:
+
+## Patched QEMU
+
+See https://github.com/just-containers/qemu/releases - this is
+a version of qemu with an additional "-execve" flag. You'll
+be able to run this chroots like:
+
+```
+cp qemu-arm-static /path/to/chroot/bin/qemu-arm-static
+chroot /path/to/chroot /bin/qemu-arm-static -execve /bin/sh
+```
+
+You'll likely still need root access for this to work, or
+the right combination of fakeroot + fakechroot.
+
+## PRoot + any QEMU
+
+This has a few benefits:
+
+* No root access
+* No need to copy qemu into the chroot
+
+Example:
+
+```
+proot -r /path/to/chroot -q qemu-arm-static -w / /bin/sh
+```
+
+Or better yet:
+
+```
+env - PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+  proot -S /path/to/chroot \
+  -q qemu-arm-static \
+  -w /
+  /bin/sh
+```
+
+`proot -S` is similar to `-r`, but with binds to `/dev`, `/sys`, etc.
+
+
 
 ## Usage
 

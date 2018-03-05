@@ -13,12 +13,13 @@ unset CC CXX LINK AR NM READELF RANLIB
 source versions
 
 THISDIR=$(pwd)
-DISTDIR=$(pwd)/dist
-DOWNLOADDIR=$(pwd)/downloads
-BUILDDIR=$(pwd)/builds
-TOOLDIR=$(pwd)/tools
-CHROOTDIR=$(pwd)/chroots
-LOGDIR=$(pwd)/logs
+DISTDIR=${THISDIR}/dist
+DOWNLOADDIR=${THISDIR}/downloads
+BUILDDIR=${THISDIR}/builds
+TOOLDIR=${THISDIR}/tools
+CHROOTDIR=${THISDIR}/chroots
+PATCHDIR=${THISDIR}/patches
+LOGDIR=${THISDIR}/logs
 
 mkdir -p $DISTDIR
 mkdir -p $DOWNLOADDIR
@@ -64,15 +65,11 @@ mkdir -p $CHROOTDIR/${TARGET}/run
 mkdir -p $CHROOTDIR/${TARGET}/tmp
 mkdir -p $CHROOTDIR/${TARGET}/var
 mkdir -p $CHROOTDIR/${TARGET}/etc
+mkdir -p $CHROOTDIR/${TARGET}/root
 
-case "$TARGET" in
-  arm*)
-    tar xf $DOWNLOADDIR/qemu-2.9.0-arm.tar.gz -C $CHROOTDIR/${TARGET}/bin --strip-components=1
-    ;;
-  aarch64*)
-    tar xf $DOWNLOADDIR/qemu-2.9.0-aarch64.tar.gz -C $CHROOTDIR/${TARGET}/bin --strip-components=1
-    ;;
-esac
+printf "root:!:0:0::/root:/bin/sh\n" > $CHROOTDIR/${TARGET}/etc/passwd
+printf "root:x:0:\n" > $CHROOTDIR/${TARGET}/etc/group
+printf "/bin/sh\n" > $CHROOTDIR/${TARGET}/etc/shells
 
 
 if [[ ! -f "$DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.xz" ]] ; then
@@ -87,6 +84,11 @@ echo "Building kernel headers"
 
 mkdir -p $BUILDDIR/${TARGET}
 tar xf $DOWNLOADDIR/linux-${LINUX_VER}.tar.xz -C $BUILDDIR/${TARGET}
+
+if [[ -d $PATCHDIR/linux-${LINUX_VER} ]] ; then
+    cat $PATCHDIR/linux-${LINUX_VER}/* | ( cd $BUILDDIR/${TARGET}/linux-${LINUX_VER} && patch -p1)
+fi
+
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
 $DOWNLOADDIR/bin/runlog -l $LOGDIR/kernel-${TARGET}.txt -- \
 make -C $BUILDDIR/${TARGET}/linux-${LINUX_VER} ARCH=${linux_arches[${TARGET}]} CC=${TARGET}-gcc INSTALL_HDR_PATH=${CHROOTDIR}/${TARGET}/usr headers_install >/dev/null
@@ -95,6 +97,9 @@ cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/linux-${LINUX_VER}
 
 tar xf $DOWNLOADDIR/busybox-${BUSYBOX_VER}.tar.bz2 -C $BUILDDIR/${TARGET}
+if [[ -d $PATCHDIR/busybox-${BUSYBOX_VER} ]] ; then
+    cat $PATCHDIR/busybox-${BUSYBOX_VER}/* | ( cd $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} && patch -p1)
+fi
 
 echo "Building busybox"
 
@@ -136,6 +141,11 @@ cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER}
 
 tar xf $DOWNLOADDIR/musl-${MUSL_VER}.tar.gz -C $BUILDDIR/${TARGET}
+
+if [[ -d $PATCHDIR/musl-${MUSL_VER} ]] ; then
+    cat $PATCHDIR/musl-${MUSL_VER}/* | ( cd $BUILDDIR/${TARGET}/musl-${MUSL_VER} && patch -p1)
+fi
+
 cd $BUILDDIR/${TARGET}/musl-${MUSL_VER}
 
 echo "Building musl"
@@ -162,6 +172,11 @@ cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/musl-${MUSL_VER}
 
 tar xf $DOWNLOADDIR/binutils-${BINUTILS_VER}.tar.xz -C $BUILDDIR/${TARGET}
+
+if [[ -d $PATCHDIR/binutils-${BINUTILS_VER} ]] ; then
+    cat $PATCHDIR/binutils-${BINUTILS_VER}/* | ( cd $BUILDDIR/${TARGET}/binutils-${BINUTILS_VER} && patch -p1)
+fi
+
 cd $BUILDDIR/${TARGET}/binutils-${BINUTILS_VER}
 
 echo "Building binutils"
@@ -194,6 +209,11 @@ cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/binutils-${BINUTILS_VER}
 
 tar xf $DOWNLOADDIR/make-${MAKE_VER}.tar.bz2 -C $BUILDDIR/${TARGET}
+
+if [[ -d $PATCHDIR/make-${MAKE_VER} ]] ; then
+    cat $PATCHDIR/make-${MAKE_VER}/* | ( cd $BUILDDIR/${TARGET}/make-${MAKE_VER} && patch -p1)
+fi
+
 cd $BUILDDIR/${TARGET}/make-${MAKE_VER}
 
 echo "Building make"
@@ -223,6 +243,11 @@ cd $BUILDDIR
 rm -rf $BUILDDIR/${TARGET}/make-${MAKE_VER}
 
 tar xf $DOWNLOADDIR/gcc-${GCC_VER}.tar.xz -C $BUILDDIR/${TARGET}
+
+if [[ -d $PATCHDIR/gcc-${GCC_VER} ]] ; then
+    cat $PATCHDIR/gcc-${GCC_VER}/* | ( cd $BUILDDIR/${TARGET}/gcc-${GCC_VER} && patch -p1)
+fi
+
 cd $BUILDDIR/${TARGET}/gcc-${GCC_VER}
 tar xf $DOWNLOADDIR/gmp-${GMP_VER}.tar.xz
 tar xf $DOWNLOADDIR/mpfr-${MPFR_VER}.tar.xz
