@@ -1,0 +1,78 @@
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index adbf0c4..7e3503a 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -6498,6 +6498,48 @@ main (int argc, char **argv)
+     do_option_spec (option_default_specs[i].name,
+ 		    option_default_specs[i].spec);
+ 
++#if !(defined (__MSDOS__) || defined (OS2) || defined (VMS) || defined (WIN32))
++  /* Add specs listed in GCC_SPECS.  Note; in the process of separating
++   * each spec listed, the string is overwritten at token boundaries
++   * (':') with '\0', an effect of strtok_r().
++   */
++  specs_file = getenv ("GCC_SPECS");
++  if (specs_file && (strlen(specs_file) > 0))
++    {
++      char *spec, *saveptr;
++      for (spec=strtok_r(specs_file,":",&saveptr);
++           spec!=NULL;
++           spec=strtok_r(NULL,":",&saveptr))
++        {
++          struct user_specs *user = (struct user_specs *)
++            xmalloc (sizeof (struct user_specs));
++          user->next = (struct user_specs *) 0;
++          user->filename = spec;
++          if (user_specs_tail)
++            user_specs_tail->next = user;
++          else
++            user_specs_head = user;
++          user_specs_tail = user;
++        }
++    }
++#endif
++  /* Process any user specified specs in the order given on the command
++   *     line.  */
++  for (uptr = user_specs_head; uptr; uptr = uptr->next)
++    {
++      char *filename = find_a_file (&startfile_prefixes, uptr->filename,
++        R_OK, true);
++      read_specs (filename ? filename : uptr->filename, false, true);
++    }
++  /* Process any user self specs.  */
++  {
++    struct spec_list *sl;
++    for (sl = specs; sl; sl = sl->next)
++      if (sl->name_len == sizeof "self_spec" - 1
++          && !strcmp (sl->name, "self_spec"))
++        do_self_spec (*sl->ptr_spec);
++  }
++
+   /* Process DRIVER_SELF_SPECS, adding any new options to the end
+      of the command line.  */
+ 
+@@ -6606,24 +6648,6 @@ main (int argc, char **argv)
+ 			      PREFIX_PRIORITY_LAST, 0, 1);
+     }
+ 
+-  /* Process any user specified specs in the order given on the command
+-     line.  */
+-  for (uptr = user_specs_head; uptr; uptr = uptr->next)
+-    {
+-      char *filename = find_a_file (&startfile_prefixes, uptr->filename,
+-				    R_OK, true);
+-      read_specs (filename ? filename : uptr->filename, false, true);
+-    }
+-
+-  /* Process any user self specs.  */
+-  {
+-    struct spec_list *sl;
+-    for (sl = specs; sl; sl = sl->next)
+-      if (sl->name_len == sizeof "self_spec" - 1
+-	  && !strcmp (sl->name, "self_spec"))
+-	do_self_spec (*sl->ptr_spec);
+-  }
+-
+   if (compare_debug)
+     {
+       enum save_temps save;
