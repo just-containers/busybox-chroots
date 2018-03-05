@@ -46,6 +46,8 @@ env - PATH=/usr/bin:/bin:/usr/sbin:/sbin \
 
 `proot -S` is similar to `-r`, but with binds to `/dev`, `/sys`, etc.
 
+See https://github.com/just-containers/PRoot/releases for statically-compiled
+binaries of proot.
 
 
 ## Usage
