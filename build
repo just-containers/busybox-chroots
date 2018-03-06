@@ -105,7 +105,7 @@ echo "Building busybox"
 
 CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
-LDFLAGS="-s" \
+LDFLAGS="-s -static" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
 $DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-${TARGET}-configure.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
@@ -116,7 +116,7 @@ make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
 
 CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
-LDFLAGS="-s" \
+LDFLAGS="-s -static" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
 $DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-${TARGET}-build.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
@@ -129,7 +129,7 @@ make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
 
 CFLAGS="-g0 -Os" \
 CXXFLAGS="-g0 -Os" \
-LDFLAGS="-s" \
+LDFLAGS="-s -static" \
 PATH="$TOOLDIR/${TARGET}/bin:$PATH" \
 $DOWNLOADDIR/bin/runlog -l $LOGDIR/busybox-${TARGET}-install.txt -- \
 make -C $BUILDDIR/${TARGET}/busybox-${BUSYBOX_VER} \
