@@ -75,7 +75,7 @@ printf "/bin/sh\n" > $CHROOTDIR/${TARGET}/etc/shells
 if [[ ! -f "$DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.xz" ]] ; then
     printf 'Downloading cross-compiler\n'
     curl -s -R -L -o "$DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.xz" \
-      "https://github.com/just-containers/musl-cross-make/releases/download/v11/gcc-${GCC_VER}-${TARGET}.tar.xz"
+      "https://github.com/just-containers/musl-cross-make/releases/download/v12/gcc-${GCC_VER}-${TARGET}.tar.xz"
 fi
 
 tar xf $DOWNLOADDIR/gcc-${GCC_VER}-${TARGET}.tar.xz -C $TOOLDIR/${TARGET}
