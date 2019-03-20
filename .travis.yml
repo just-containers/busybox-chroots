@@ -9,6 +9,7 @@ env:
   - TARGET=arm-linux-musleabi
   - TARGET=arm-linux-musleabihf
   - TARGET=aarch64-linux-musl
+  - TARGET=powerpc64le-linux-musl
 
 install:
   - bash download

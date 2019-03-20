@@ -35,6 +35,7 @@ linux_arches[i486-linux-musl]=x86
 linux_arches[arm-linux-musleabihf]=arm
 linux_arches[arm-linux-musleabi]=arm
 linux_arches[aarch64-linux-musl]=arm64
+linux_arches[powerpc64le-linux-musl]=powerpc
 
 declare -A short_arches
 short_arches[x86_64-linux-musl]=amd64
@@ -42,6 +43,7 @@ short_arches[i486-linux-musl]=x86
 short_arches[arm-linux-musleabihf]=armhf
 short_arches[arm-linux-musleabi]=arm
 short_arches[aarch64-linux-musl]=aarch64
+short_arches[powerpc64le-linux-musl]=ppc64le
 
 declare -A gcc_args
 gcc_args[x86_64-linux-musl]=""
@@ -49,6 +51,7 @@ gcc_args[i486-linux-musl]=""
 gcc_args[arm-linux-musleabihf]=" --with-float=hard"
 gcc_args[arm-linux-musleabi]=""
 gcc_args[aarch64-linux-musl]=""
+bcc_args[powerpc64le-linux-musl]=""
 
 mkdir -p $TOOLDIR/${TARGET}
 
