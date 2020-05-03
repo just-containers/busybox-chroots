@@ -65,9 +65,11 @@ fi
 
 if [[ ! -f "$DOWNLOADDIR/bin/github-release" ]] ; then
     printf "Downloading github-release\n"
-    curl -s -R -L -o "$DOWNLOADDIR/github-release.tar.bz2" \
-      "https://github.com/github-release/github-release/releases/download/v${GITHUB_RELEASE_VER}/linux-amd64-github-release.tar.bz2"
-    tar xf "$DOWNLOADDIR/github-release.tar.bz2" -C $DOWNLOADDIR/bin --strip-components=3
+    curl -s -R -L -o "$DOWNLOADDIR/bin/linux-amd64-github-release.bz2" \
+      "https://github.com/github-release/github-release/releases/download/v${GITHUB_RELEASE_VER}/linux-amd64-github-release.bz2"
+    bunzip2 "$DOWNLOADDIR/bin/linux-amd64-github-release.bz2"
+    mv "$DOWNLOADDIR/bin/linux-amd64-github-release" "$DOWNLOADDIR/bin/github-release"
+    chmod +x "$DOWNLOADDIR/bin/github-release"
 fi
 
 
