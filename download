@@ -65,7 +65,7 @@ fi
 if [[ ! -f "$DOWNLOADDIR/bin/github-release" ]] ; then
     printf "Downloading github-release\n"
     curl -s -R -L -o "$DOWNLOADDIR/github-release.tar.bz2" \
-      "https://github.com/aktau/github-release/releases/download/v${GITHUB_RELEASE_VER}/linux-amd64-github-release.tar.bz2"
+      "https://github.com/github-release/github-release/releases/download/v${GITHUB_RELEASE_VER}/linux-amd64-github-release.tar.bz2"
     tar xf "$DOWNLOADDIR/github-release.tar.bz2" -C $DOWNLOADDIR/bin --strip-components=3
 fi
 
